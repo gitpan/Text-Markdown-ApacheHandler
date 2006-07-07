@@ -9,11 +9,11 @@ Text::Markdown::ApacheHandler - Processes files with Markdown syntax for Apache
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use Apache::Constants qw(:common);
 use Apache::File ();
@@ -24,10 +24,10 @@ use Text::Markdown 'markdown';
 
 Processes files containing Markdown syntax into HTML files and serves them.
 
-	AddHandler text/markdown .markdown
-	AddHandler text/markdown .md
-	AddHandler text/markdown .mhtml
-	<Files ~ "\.(markdown|md|mhtml)$">
+You might put some lines like this in your C<.htaccess> or C<httpd.conf> file:
+
+	AddType text/markdown .markdown .mkd .mhtml
+	<Files ~ "\.(markdown|mkd|mhtml)$">
 		SetHandler perl-script
 		PerlHandler Text::Markdown::ApacheHandler
 	</Files>
@@ -44,7 +44,8 @@ Standard Apache module entry point
 
 sub handler {
 	my $r = shift;
-	$r->send_http_header;
+	return DECLINED unless $r->content_type() eq 'text/markdown';
+	$r->send_http_header('text/html');
 	my $file = $r->filename;
 
 	unless (-e $r->finfo) {
