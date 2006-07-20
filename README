@@ -1,7 +1,7 @@
 Text-Markdown-ApacheHandler
 
-This module acts as an Apache module to handle documents containging Markdown
-syntax.
+This module acts as an Apache module to handle documents containing Markdown
+syntax. See the module POD for more detail.
 
 INSTALLATION
 

@@ -9,11 +9,11 @@ Text::Markdown::ApacheHandler - Processes files with Markdown syntax for Apache
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use Apache::Constants qw(:common);
 use Apache::File ();
@@ -22,7 +22,9 @@ use Text::Markdown 'markdown';
 
 =head1 SYNOPSIS
 
-Processes files containing Markdown syntax into HTML files and serves them.
+Processes files containing Markdown syntax into HTML files and serves them,
+optionally applying CSS styles according to rules in your httpd.conf or (more
+likely) .htaccess files.
 
 You might put some lines like this in your C<.htaccess> or C<httpd.conf> file:
 
@@ -30,7 +32,12 @@ You might put some lines like this in your C<.htaccess> or C<httpd.conf> file:
 	<Files ~ "\.(markdown|mkd|mhtml)$">
 		SetHandler perl-script
 		PerlHandler Text::Markdown::ApacheHandler
+		PerlAddVar mkd_stylesheet "style/mkd.css"
 	</Files>
+
+	<Directory /www/html/fancy/>
+		PerlAddVar mkd_stylesheet "fancy.css"
+	</Directory>
 
 =head1 METHODS
 
@@ -47,6 +54,17 @@ sub handler {
 	return DECLINED unless $r->content_type() eq 'text/markdown';
 	$r->send_http_header('text/html');
 	my $file = $r->filename;
+
+	my @head;
+
+	push @head, map {
+		Link({
+			-rel => 'stylesheet',
+			-href => $_,
+			-type => 'text/css'}
+		)
+	# TODO: Extract stylesheet variable name
+	} grep { $_ } $r->dir_config('mkd_stylesheet');
 
 	unless (-e $r->finfo) {
 		$r->log_error("File does not exist: $file");    
@@ -67,7 +85,7 @@ sub handler {
 	my $content = do { local $/; <$fh> };
 	my ($title) = $file =~ m#/([^/]+?)(?:\.[^./]+)?$#;
 	$r->print(
-		start_html($title),
+		start_html(-title => $title, -head => [ @head ]),
 		markdown($content),
 		end_html
 		);
