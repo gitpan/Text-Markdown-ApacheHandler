@@ -9,11 +9,11 @@ Text::Markdown::ApacheHandler - Processes files with Markdown syntax for Apache
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use Apache::Constants qw(:common);
 use Apache::File ();
@@ -52,7 +52,6 @@ Standard Apache module entry point
 sub handler {
 	my $r = shift;
 	return DECLINED unless $r->content_type() eq 'text/markdown';
-	$r->send_http_header('text/html');
 	my $file = $r->filename;
 
 	my @head;
@@ -61,9 +60,9 @@ sub handler {
 		Link({
 			-rel => 'stylesheet',
 			-href => $_,
+			# TODO: Extract stylesheet variable name
 			-type => 'text/css'}
 		)
-	# TODO: Extract stylesheet variable name
 	} grep { $_ } $r->dir_config('mkd_stylesheet');
 
 	unless (-e $r->finfo) {
@@ -84,6 +83,7 @@ sub handler {
 	}
 	my $content = do { local $/; <$fh> };
 	my ($title) = $file =~ m#/([^/]+?)(?:\.[^./]+)?$#;
+	$r->send_http_header('text/html');
 	$r->print(
 		start_html(-title => $title, -head => [ @head ]),
 		markdown($content),
